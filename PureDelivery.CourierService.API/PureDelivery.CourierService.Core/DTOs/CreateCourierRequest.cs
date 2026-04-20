@@ -1,4 +1,4 @@
-using PureDelivery.CourierService.Core.Enums;
+using PureDelivery.Shared.Contracts.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace PureDelivery.CourierService.Core.DTOs

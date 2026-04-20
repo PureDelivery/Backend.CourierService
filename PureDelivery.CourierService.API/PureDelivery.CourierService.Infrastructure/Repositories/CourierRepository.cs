@@ -20,9 +20,9 @@ namespace PureDelivery.CourierService.Infrastructure.Repositories
         public async Task<Courier?> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
             await _context.Couriers.FirstOrDefaultAsync(c => c.UserId == userId && c.IsActive, ct);
 
+
         public async Task<bool> IsEmailUniqueAsync(string email, CancellationToken ct = default) =>
-            !await _context.Couriers.AnyAsync(
-                c => c.Email.ToLower() == email.ToLower(), ct);
+            !await _context.Couriers.AnyAsync(c => c.Email.ToLower() == email.ToLower(), ct);
 
         public async Task<Courier> AddAsync(Courier courier, CancellationToken ct = default)
         {
@@ -37,8 +37,63 @@ namespace PureDelivery.CourierService.Infrastructure.Repositories
             if (courier == null) return false;
 
             courier.IsActive = false;
+            courier.IsOnline = false;
+            courier.IsAvailable = false;
             await _context.SaveChangesAsync(ct);
             return true;
+        }
+
+        public async Task<bool> UpdateLocationAsync(
+            Guid id, double lat, double lng, bool isOnline, bool isAvailable,
+            CancellationToken ct = default)
+        {
+            var courier = await _context.Couriers.FindAsync([id], ct);
+            if (courier == null) return false;
+
+            courier.CurrentLatitude = lat;
+            courier.CurrentLongitude = lng;
+            courier.IsOnline = isOnline;
+            courier.IsAvailable = isAvailable;
+            courier.LastLocationUpdated = DateTime.UtcNow;
+            await _context.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<bool> AddRatingAsync(Guid id, int score, CancellationToken ct = default)
+        {
+            var courier = await _context.Couriers.FindAsync([id], ct);
+            if (courier == null) return false;
+
+            courier.RatingSum += score;
+            courier.RatingCount += 1;
+            await _context.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<bool> CompleteDeliveryAsync(Guid id, CancellationToken ct = default)
+        {
+            var courier = await _context.Couriers.FindAsync([id], ct);
+            if (courier == null) return false;
+
+            courier.TotalDeliveries += 1;
+            courier.IsAvailable = true;
+            await _context.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<List<Courier>> GetOnlineAvailableAsync(decimal restaurantLat, decimal restaurantLng, decimal maxRadiusKm, CancellationToken ct = default)
+        {
+            decimal delta = maxRadiusKm / 111m * 1.2m;
+
+            return await _context.Couriers
+                 .Where(c => c.IsActive && c.IsOnline && c.IsAvailable
+                          && c.CurrentLatitude != null
+                          && c.CurrentLongitude != null
+                          && (decimal)c.CurrentLatitude.Value >= restaurantLat - delta
+                          && (decimal)c.CurrentLatitude.Value <= restaurantLat + delta
+                          && (decimal)c.CurrentLongitude.Value >= restaurantLng - delta
+                          && (decimal)c.CurrentLongitude.Value <= restaurantLng + delta)
+                 .ToListAsync(ct);
         }
     }
 }

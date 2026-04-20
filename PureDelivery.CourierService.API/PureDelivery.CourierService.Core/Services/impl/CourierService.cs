@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using PureDelivery.CourierService.Core.DTOs;
 using PureDelivery.CourierService.Core.Models;
@@ -6,22 +7,29 @@ using PureDelivery.CourierService.Core.Services.External;
 using PureDelivery.Shared.Contracts.Domain.Enums;
 using PureDelivery.Shared.Contracts.Domain.Models;
 using PureDelivery.Shared.Contracts.DTOs.Identity.Requests;
+using PureDelivery.Shared.Contracts.Events.Orders;
 
 namespace PureDelivery.CourierService.Core.Services.impl
 {
     public class CourierService : ICourierService
     {
         private readonly ICourierRepository _repository;
+        private readonly ICourierAssignmentRepository _assignmentRepository;
         private readonly IIdentityServiceClient _identityClient;
+        private readonly IPublishEndpoint _publishEndpoint;
         private readonly ILogger<CourierService> _logger;
 
         public CourierService(
             ICourierRepository repository,
+            ICourierAssignmentRepository assignmentRepository,
             IIdentityServiceClient identityClient,
+            IPublishEndpoint publishEndpoint,
             ILogger<CourierService> logger)
         {
             _repository = repository;
+            _assignmentRepository = assignmentRepository;
             _identityClient = identityClient;
+            _publishEndpoint = publishEndpoint;
             _logger = logger;
         }
 
@@ -122,6 +130,43 @@ namespace PureDelivery.CourierService.Core.Services.impl
                 return BaseResponse<bool>.Failure($"Error: {ex.Message}");
             }
         }
+
+        public async Task<BaseResponse<CourierDto>> UpdateLocationAsync(
+            Guid id, UpdateLocationRequest request, CancellationToken ct = default)
+        {
+            try
+            {
+                // isAvailable = online AND no active delivery (caller passes isOnline)
+                var updated = await _repository.UpdateLocationAsync(
+                    id, request.Latitude, request.Longitude,
+                    request.IsOnline, request.IsOnline, ct);
+
+                if (!updated)
+                    return BaseResponse<CourierDto>.Failure("Courier not found.");
+
+                var courier = await _repository.GetByIdAsync(id, ct);
+
+                // If courier is actively delivering, push live location to the customer
+                var activeAssignment = await _assignmentRepository.GetActiveAssignmentByCourierIdAsync(id, ct);
+                if (activeAssignment != null)
+                {
+                    await _publishEndpoint.Publish(new CourierLocationUpdatedEvent
+                    {
+                        OrderId   = activeAssignment.OrderId.ToString(),
+                        Latitude  = request.Latitude,
+                        Longitude = request.Longitude,
+                        UpdatedAt = DateTime.UtcNow
+                    }, ct);
+                }
+
+                return BaseResponse<CourierDto>.Success(courier!.ToDto());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating location for courier {Id}", id);
+                return BaseResponse<CourierDto>.Failure($"Error: {ex.Message}");
+            }
+        }
     }
 
     internal static class CourierExtensions
@@ -135,8 +180,15 @@ namespace PureDelivery.CourierService.Core.Services.impl
             Phone = c.Phone,
             Email = c.Email,
             VehicleType = c.VehicleType,
+            CurrentLatitude = c.CurrentLatitude,
+            CurrentLongitude = c.CurrentLongitude,
+            IsOnline = c.IsOnline,
+            IsAvailable = c.IsAvailable,
+            LastLocationUpdated = c.LastLocationUpdated,
+            AverageRating = c.AverageRating,
+            TotalDeliveries = c.TotalDeliveries,
             IsActive = c.IsActive,
-            CreatedAt = c.CreatedAt
+            CreatedAt = c.CreatedAt,
         };
     }
 }

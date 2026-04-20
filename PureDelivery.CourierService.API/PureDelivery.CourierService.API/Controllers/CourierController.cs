@@ -90,5 +90,25 @@ namespace PureDelivery.CourierService.Controllers
             if (!result.IsSuccess) return NotFound(result);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Обновить местоположение курьера и статус онлайн/оффлайн.
+        /// Вызывается фронтом курьера каждые N секунд пока он онлайн.
+        /// </summary>
+        [HttpPut("{id:guid}/location")]
+        [ProducesResponseType(typeof(BaseResponse<CourierDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BaseResponse<CourierDto>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BaseResponse<CourierDto>>> UpdateLocation(
+            [FromRoute] Guid id,
+            [FromBody] UpdateLocationRequest request,
+            CancellationToken ct = default)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(BaseResponse<CourierDto>.Failure("Invalid request data"));
+
+            var result = await _courierService.UpdateLocationAsync(id, request, ct);
+            if (!result.IsSuccess) return NotFound(result);
+            return Ok(result);
+        }
     }
 }

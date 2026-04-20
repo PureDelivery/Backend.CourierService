@@ -1,14 +1,20 @@
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using PureDelivery.Common.Configuration.Extensions;
+using PureDelivery.Common.Configuration.Services;
 using PureDelivery.Common.Http.Extensions;
+using PureDelivery.Shared.Contracts.Configuration;
+using PureDelivery.CourierService.API.Consumers;
 using PureDelivery.CourierService.Core.Repositories;
 using PureDelivery.CourierService.Core.Services;
 using PureDelivery.CourierService.Core.Services.External;
 using PureDelivery.CourierService.Core.Services.External.impl;
+using PureDelivery.Shared.Contracts.Configuration;
 using PureDelivery.CourierService.Core.Services.impl;
-using PureDelivery.CourierService.Helpers;
+using PureDelivery.CourierService.Infrastructure.Data;
 using PureDelivery.CourierService.Infrastructure.Repositories;
-using PureDelivery.Infrastructure.Redis.Extensions;
 using Serilog;
+using CourierServiceImpl = PureDelivery.CourierService.Core.Services.impl.CourierService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,16 +25,47 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .Enrich.WithProperty("Service", "CourierService");
 });
 
-builder.Services.AddRedisServices("Redis");
 builder.Services.AddConfigurationProvider(builder.Configuration);
 
 builder.Services.AddApiClient("HttpClient");
 
-builder.Services.AddScoped<ICourierRepository, CourierRepository>();
-builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
-builder.Services.AddScoped<ICourierService, CourierService>();
+builder.Services.AddDbContext<CourierDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-await IoCHelper.ConfigureDatabaseAsync(builder);
+builder.Services.AddScoped<ICourierRepository, CourierRepository>();
+builder.Services.AddScoped<ICourierRatingRepository, CourierRatingRepository>();
+builder.Services.AddScoped<IAvailableOrderRepository, AvailableOrderRepository>();
+builder.Services.AddScoped<ICourierAssignmentRepository, CourierAssignmentRepository>();
+builder.Services.AddScoped<IIdentityServiceClient, IdentityServiceClient>();
+builder.Services.AddScoped<ILocationServiceClient, LocationServiceClient>();
+builder.Services.AddScoped<ICourierService, CourierServiceImpl>();
+builder.Services.AddScoped<ICourierRatingService, CourierRatingService>();
+builder.Services.AddScoped<ICourierAssignmentService, CourierAssignmentService>();
+
+builder.Services.AddSingleton<RabbitMqConfiguration>(sp =>
+{
+    var provider = sp.GetRequiredService<ICustomConfigurationProvider>();
+    var cfg = provider.GetConfigurationAsync<RabbitMqConfiguration>("RabbitMQ").Result;
+    cfg.Validate();
+    return cfg;
+});
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<OrderProcessedConsumer>();
+    x.AddConsumer<OrderReadyForPickupConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitCfg = context.GetRequiredService<RabbitMqConfiguration>();
+        cfg.Host(rabbitCfg.Host, rabbitCfg.VirtualHost, h =>
+        {
+            h.Username(rabbitCfg.Username);
+            h.Password(rabbitCfg.Password);
+        });
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

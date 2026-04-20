@@ -9,5 +9,6 @@ namespace PureDelivery.CourierService.Core.Services
         Task<BaseResponse<CourierDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<BaseResponse<CourierDto>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
         Task<BaseResponse<bool>> DeactivateAsync(Guid id, CancellationToken ct = default);
+        Task<BaseResponse<CourierDto>> UpdateLocationAsync(Guid id, UpdateLocationRequest request, CancellationToken ct = default);
     }
 }

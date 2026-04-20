@@ -1,8 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using PureDelivery.Common.Configuration.Services;
 using PureDelivery.Common.Http.Models;
 using PureDelivery.Common.Http.Services;
-using PureDelivery.CourierService.Core.Configuration;
+using PureDelivery.Shared.Contracts.Configuration;
 using PureDelivery.Shared.Contracts.Domain.Models;
 using PureDelivery.Shared.Contracts.DTOs.Identity.Requests;
 using PureDelivery.Shared.Contracts.DTOs.Identity.Responses;
@@ -11,8 +13,16 @@ namespace PureDelivery.CourierService.Core.Services.External.impl
 {
     public class IdentityServiceClient : IIdentityServiceClient
     {
+        private const string CreateCredentialEndpoint = "/api/internal/v1/identity/UserCredential";
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
         private readonly IHttpApiClient _httpApiClient;
-        private readonly IdentityServiceConfig _config;
+        private readonly IdentityServiceConfiguration _config;
         private readonly ILogger<IdentityServiceClient> _logger;
 
         public IdentityServiceClient(
@@ -23,7 +33,7 @@ namespace PureDelivery.CourierService.Core.Services.External.impl
             _httpApiClient = httpApiClient;
             _logger = logger;
             _config = configProvider
-                .GetConfigurationAsync<IdentityServiceConfig>("IdentityService")
+                .GetConfigurationAsync<IdentityServiceConfiguration>("IdentityService")
                 .GetAwaiter()
                 .GetResult();
         }
@@ -37,7 +47,7 @@ namespace PureDelivery.CourierService.Core.Services.External.impl
                 var requestParams = HttpRequestParams
                     .WithBody(
                         _config.BaseUrl,
-                        _config.GetCreateCredentialEndpoint(),
+                        CreateCredentialEndpoint,
                         request
                     )
                     .WithHeaders(new Dictionary<string, string>
@@ -50,20 +60,21 @@ namespace PureDelivery.CourierService.Core.Services.External.impl
                 var response = await _httpApiClient
                     .PostAsync<BaseResponse<RegisterUserCredentialResult>>(requestParams);
 
-                if (!response.IsSuccess)
+                BaseResponse<RegisterUserCredentialResult>? body = response.Data;
+                if (body == null && !string.IsNullOrEmpty(response.RawContent))
                 {
-                    _logger.LogError("IdentityService HTTP error {StatusCode}: {Message}",
-                        response.StatusCode, response.ErrorMessage);
+                    body = JsonSerializer.Deserialize<BaseResponse<RegisterUserCredentialResult>>(
+                        response.RawContent, _jsonOptions);
+                }
+
+                if (body == null || !body.IsSuccess || body.Data == null)
+                {
+                    _logger.LogError("IdentityService error {StatusCode}: {Error}",
+                        response.StatusCode, body?.Error ?? response.ErrorMessage);
                     return null;
                 }
 
-                if (response.Data?.IsSuccess != true || response.Data.Data == null)
-                {
-                    _logger.LogError("IdentityService business error: {Error}", response.Data?.Error);
-                    return null;
-                }
-
-                return response.Data.Data;
+                return body.Data;
             }
             catch (Exception ex)
             {
