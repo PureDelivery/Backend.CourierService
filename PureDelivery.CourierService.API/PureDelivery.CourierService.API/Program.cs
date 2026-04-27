@@ -54,6 +54,7 @@ builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<OrderProcessedConsumer>();
     x.AddConsumer<OrderReadyForPickupConsumer>();
+    x.AddConsumer<CourierRatingReceivedConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {

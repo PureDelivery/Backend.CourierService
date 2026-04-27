@@ -56,8 +56,8 @@ public class CourierAssignmentService(
             var courierEntry = new CourierLocationData
             {
                 CourierUserId = userId.ToString(),
-                Latitude = (decimal)courier.CurrentLatitude.Value,
-                Longitude = (decimal)courier.CurrentLongitude.Value,
+                Latitude = courier.CurrentLatitude.Value,
+                Longitude = courier.CurrentLongitude.Value,
                 VehicleType = courier.VehicleType
             };
 
@@ -182,6 +182,7 @@ public class CourierAssignmentService(
             await publishEndpoint.Publish(new OrderInDeliveryEvent
             {
                 OrderId           = assignment.OrderId.ToString(),
+                CourierId         = courier.Id.ToString(),
                 CourierUserId     = courier.UserId.ToString(),
                 CourierFirstName  = courier.FirstName,
                 CourierLastName   = courier.LastName,
@@ -235,6 +236,7 @@ public class CourierAssignmentService(
             await publishEndpoint.Publish(new OrderInDeliveryEvent
             {
                 OrderId              = assignment.OrderId.ToString(),
+                CourierId            = courier.Id.ToString(),
                 CourierUserId        = courier.UserId.ToString(),
                 CourierFirstName     = courier.FirstName,
                 CourierLastName      = courier.LastName,
@@ -296,6 +298,24 @@ public class CourierAssignmentService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error marking delivery for courier with UserId {UserId} order {OrderId}", userId, orderId);
+            return BaseResponse<CourierAssignmentDto>.Failure($"Error: {ex.Message}");
+        }
+    }
+
+    public async Task<BaseResponse<CourierAssignmentDto>> GetByOrderIdAsync(
+        Guid orderId, CancellationToken ct = default)
+    {
+        try
+        {
+            var assignment = await assignmentRepo.GetByOrderIdAsync(orderId, ct);
+            if (assignment == null)
+                return BaseResponse<CourierAssignmentDto>.Failure("Assignment not found.");
+
+            return BaseResponse<CourierAssignmentDto>.Success(ToDto(assignment));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting assignment for order {OrderId}", orderId);
             return BaseResponse<CourierAssignmentDto>.Failure($"Error: {ex.Message}");
         }
     }

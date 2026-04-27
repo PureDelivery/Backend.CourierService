@@ -15,5 +15,7 @@ namespace PureDelivery.CourierService.Core.DTOs
 
         [MaxLength(500)]
         public string Comment { get; set; } = string.Empty;
+
+        public string? CustomerName { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PureDelivery.CourierService.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using PureDelivery.CourierService.Infrastructure.Data;
 namespace PureDelivery.CourierService.Infrastructure.Migrations
 {
     [DbContext(typeof(CourierDbContext))]
-    partial class CourierDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421095705_DecimalToDouble")]
+    partial class DecimalToDouble
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,10 +54,12 @@ namespace PureDelivery.CourierService.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<double>("DeliveryLatitude")
-                        .HasColumnType("float");
+                        .HasPrecision(18, 6)
+                        .HasColumnType("float(18)");
 
                     b.Property<double>("DeliveryLongitude")
-                        .HasColumnType("float");
+                        .HasPrecision(18, 6)
+                        .HasColumnType("float(18)");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
@@ -78,10 +83,12 @@ namespace PureDelivery.CourierService.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<double>("RestaurantLatitude")
-                        .HasColumnType("float");
+                        .HasPrecision(18, 6)
+                        .HasColumnType("float(18)");
 
                     b.Property<double>("RestaurantLongitude")
-                        .HasColumnType("float");
+                        .HasPrecision(18, 6)
+                        .HasColumnType("float(18)");
 
                     b.Property<string>("RestaurantName")
                         .IsRequired()

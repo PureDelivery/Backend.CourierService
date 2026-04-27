@@ -22,9 +22,9 @@ public class AvailableOrderConfiguration : IEntityTypeConfiguration<AvailableOrd
         builder.Property(e => e.CustomerName).HasMaxLength(200);
         builder.Property(e => e.DeliveryFee).HasPrecision(18, 2);
         builder.Property(e => e.TotalAmount).HasPrecision(18, 2);
-        builder.Property(e => e.DeliveryLatitude).HasPrecision(18, 6);
-        builder.Property(e => e.DeliveryLongitude).HasPrecision(18, 6);
-        builder.Property(e => e.RestaurantLatitude).HasPrecision(18, 6);
-        builder.Property(e => e.RestaurantLongitude).HasPrecision(18, 6);
+        builder.Property(e => e.DeliveryLatitude).HasColumnType("float");
+        builder.Property(e => e.DeliveryLongitude).HasColumnType("float");
+        builder.Property(e => e.RestaurantLatitude).HasColumnType("float");
+        builder.Property(e => e.RestaurantLongitude).HasColumnType("float");
     }
 }

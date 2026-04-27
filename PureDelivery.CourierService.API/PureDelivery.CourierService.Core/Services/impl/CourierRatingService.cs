@@ -1,8 +1,10 @@
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using PureDelivery.CourierService.Core.DTOs;
 using PureDelivery.CourierService.Core.Models;
 using PureDelivery.CourierService.Core.Repositories;
 using PureDelivery.Shared.Contracts.Domain.Models;
+using PureDelivery.Shared.Contracts.Events.Reviews;
 
 namespace PureDelivery.CourierService.Core.Services.impl
 {
@@ -10,15 +12,18 @@ namespace PureDelivery.CourierService.Core.Services.impl
     {
         private readonly ICourierRatingRepository _ratingRepo;
         private readonly ICourierRepository _courierRepo;
+        private readonly IPublishEndpoint _publishEndpoint;
         private readonly ILogger<CourierRatingService> _logger;
 
         public CourierRatingService(
             ICourierRatingRepository ratingRepo,
             ICourierRepository courierRepo,
+            IPublishEndpoint publishEndpoint,
             ILogger<CourierRatingService> logger)
         {
             _ratingRepo = ratingRepo;
             _courierRepo = courierRepo;
+            _publishEndpoint = publishEndpoint;
             _logger = logger;
         }
 
@@ -49,6 +54,18 @@ namespace PureDelivery.CourierService.Core.Services.impl
                 _logger.LogInformation(
                     "Rating {Score} submitted for courier {CourierId} on order {OrderId}",
                     request.Score, courierId, request.OrderId);
+
+                await _publishEndpoint.Publish(new CourierRatingSubmittedEvent
+                {
+                    RatingId          = rating.Id,
+                    CourierId         = courierId,
+                    RatedByCustomerId = request.RatedByCustomerId,
+                    CustomerName      = request.CustomerName ?? string.Empty,
+                    OrderId           = request.OrderId,
+                    Score             = request.Score,
+                    Comment           = request.Comment,
+                    CreatedAt         = rating.CreatedAt,
+                }, ct);
 
                 return BaseResponse<CourierRatingDto>.Success(rating.ToDto());
             }

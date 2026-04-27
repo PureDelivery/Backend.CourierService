@@ -13,6 +13,21 @@ public class CourierAssignmentController(
     ILogger<CourierAssignmentController> logger) : ControllerBase
 {
     /// <summary>
+    /// Returns the assignment for a given order. Used by customers to look up the courier after delivery.
+    /// </summary>
+    [HttpGet("by-order/{orderId:guid}")]
+    [ProducesResponseType(typeof(BaseResponse<CourierAssignmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BaseResponse<CourierAssignmentDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BaseResponse<CourierAssignmentDto>>> GetByOrderId(
+        [FromRoute] Guid orderId,
+        CancellationToken ct = default)
+    {
+        var result = await assignmentService.GetByOrderIdAsync(orderId, ct);
+        if (!result.IsSuccess) return NotFound(result);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns the courier's current active assignment (Accepted or PickedUp), or null if none.
     /// Used to sync assignment state on app load.
     /// </summary>

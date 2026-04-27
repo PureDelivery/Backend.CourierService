@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
     <PackageReference Include="PureDelivery.Common.Configuration" Version="1.1.0" />
     <PackageReference Include="PureDelivery.Common.Http" Version="1.1.1" />
-    <PackageReference Include="PureDelivery.Shared.Contracts" Version="3.5.7" />
+    <PackageReference Include="PureDelivery.Shared.Contracts" Version="3.9.2" />
   </ItemGroup>
 
 </Project>

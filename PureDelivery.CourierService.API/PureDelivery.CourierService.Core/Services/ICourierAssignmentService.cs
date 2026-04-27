@@ -13,4 +13,5 @@ public interface ICourierAssignmentService
     /// <summary>Restaurant confirms that the courier has picked up — they verify the code shown in courier's app.</summary>
     Task<BaseResponse<CourierAssignmentDto>> ConfirmPickupByRestaurantAsync(Guid orderId, string pickupCode, CancellationToken ct = default);
     Task<BaseResponse<CourierAssignmentDto>> MarkDeliveredAsync(Guid userId, Guid orderId, CancellationToken ct = default);
+    Task<BaseResponse<CourierAssignmentDto>> GetByOrderIdAsync(Guid orderId, CancellationToken ct = default);
 }

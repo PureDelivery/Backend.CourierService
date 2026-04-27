@@ -6,7 +6,7 @@ namespace PureDelivery.CourierService.Core.Repositories
     {
         Task<Courier?> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<Courier?> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
-        Task<List<Courier>> GetOnlineAvailableAsync(decimal restaurantLat, decimal restaurantLng, decimal maxRadiusKm, CancellationToken ct = default);
+        Task<List<Courier>> GetOnlineAvailableAsync(double restaurantLat, double restaurantLng, double maxRadiusKm, CancellationToken ct = default);
         Task<bool> IsEmailUniqueAsync(string email, CancellationToken ct = default);
         Task<Courier> AddAsync(Courier courier, CancellationToken ct = default);
         Task<bool> DeactivateAsync(Guid id, CancellationToken ct = default);

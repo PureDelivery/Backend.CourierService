@@ -50,7 +50,7 @@ public class OrderProcessedConsumer(
             {
                 var onlineCouriers = await courierRepo.GetOnlineAvailableAsync(
                     e.RestaurantLatitude, e.RestaurantLongitude,
-                    maxRadiusKm: 25m, ct);
+                    maxRadiusKm: 25.0, ct);
 
                 if (onlineCouriers.Count == 0)
                 {
@@ -68,8 +68,8 @@ public class OrderProcessedConsumer(
                         Couriers = onlineCouriers.Select(c => new CourierLocationData
                         {
                             CourierUserId = c.UserId.ToString(),
-                            Latitude = (decimal)(c.CurrentLatitude!.Value),
-                            Longitude = (decimal)(c.CurrentLongitude!.Value),
+                            Latitude = c.CurrentLatitude!.Value,
+                            Longitude = c.CurrentLongitude!.Value,
                             VehicleType = c.VehicleType
                         }).ToList()
                     };

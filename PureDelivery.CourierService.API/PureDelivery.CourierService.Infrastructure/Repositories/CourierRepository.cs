@@ -81,18 +81,18 @@ namespace PureDelivery.CourierService.Infrastructure.Repositories
             return true;
         }
 
-        public async Task<List<Courier>> GetOnlineAvailableAsync(decimal restaurantLat, decimal restaurantLng, decimal maxRadiusKm, CancellationToken ct = default)
+        public async Task<List<Courier>> GetOnlineAvailableAsync(double restaurantLat, double restaurantLng, double maxRadiusKm, CancellationToken ct = default)
         {
-            decimal delta = maxRadiusKm / 111m * 1.2m;
+            double delta = maxRadiusKm / 111.0 * 1.2;
 
             return await _context.Couriers
                  .Where(c => c.IsActive && c.IsOnline && c.IsAvailable
                           && c.CurrentLatitude != null
                           && c.CurrentLongitude != null
-                          && (decimal)c.CurrentLatitude.Value >= restaurantLat - delta
-                          && (decimal)c.CurrentLatitude.Value <= restaurantLat + delta
-                          && (decimal)c.CurrentLongitude.Value >= restaurantLng - delta
-                          && (decimal)c.CurrentLongitude.Value <= restaurantLng + delta)
+                          && c.CurrentLatitude.Value >= restaurantLat - delta
+                          && c.CurrentLatitude.Value <= restaurantLat + delta
+                          && c.CurrentLongitude.Value >= restaurantLng - delta
+                          && c.CurrentLongitude.Value <= restaurantLng + delta)
                  .ToListAsync(ct);
         }
     }

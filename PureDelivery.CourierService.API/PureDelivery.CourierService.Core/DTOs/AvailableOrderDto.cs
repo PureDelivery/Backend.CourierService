@@ -7,13 +7,13 @@ public class AvailableOrderDto
     public Guid RestaurantId { get; set; }
     public string RestaurantName { get; set; } = string.Empty;
 
-    public decimal DeliveryLatitude { get; set; }
-    public decimal DeliveryLongitude { get; set; }
+    public double DeliveryLatitude { get; set; }
+    public double DeliveryLongitude { get; set; }
     public string DeliveryAddress { get; set; } = string.Empty;
     public string DeliveryCity { get; set; } = string.Empty;
 
-    public decimal RestaurantLatitude { get; set; }
-    public decimal RestaurantLongitude { get; set; }
+    public double RestaurantLatitude { get; set; }
+    public double RestaurantLongitude { get; set; }
     public string RestaurantAddress { get; set; } = string.Empty;
     public string RestaurantCity { get; set; } = string.Empty;
 
